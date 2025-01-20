@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/psf/black
+    rev: 22.10.0
+    hooks:
+      - id: black
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.41.0
+    hooks:
+      - id: markdownlint
+        args:
+          [
+            --disable=MD013,
+            --disable=MD002,
+            --disable=MD032,
+            --disable=MD005,
+            --disable=MD009,
+          ]
+  - repo: https://github.com/AleksaC/terraform-py
+    rev: v1.10.4
+    hooks:
+      - id: tf-fmt
+      - id: tf-validate
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
+    hooks:
+      - id: gitleaks
