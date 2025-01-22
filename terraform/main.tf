@@ -20,29 +20,12 @@ module "rabbit_broker_1" {
   source = "./modules/rabbit_broker"
   name_base = "RabbitBroker1"
   subnet_ids = module.vpc.public_subnets
-  # upstream = null
-  # queues = {
-  #   ExampleQueue = {
-  #     auto_delete = false
-  #     durable = false
-  #   }
-  # }
 }
 
 module "rabbit_broker_2" {
   source = "./modules/rabbit_broker"
   name_base = "RabbitBroker2"
   subnet_ids = module.vpc.public_subnets
-  # upstream = {
-  #   endpoint_uri = module.rabbit_broker_1.rabbit_mq_broker_amqps_endpoint
-  #   secret_arn = module.rabbit_broker_1.rabbit_mq_secret_arn
-  # }
-  # queues = {
-  #   ExampleQueue = {
-  #     auto_delete = false
-  #     durable = false
-  #   }
-  # }
 }
 
 data "aws_secretsmanager_secret_version" "upstream_rabbit_mq_admin" {
@@ -126,12 +109,3 @@ resource "rabbitmq_policy" "connect_to_upstream_queue" {
     priority = 10
   }
 }
-
-
-# module "rabbit_lambda" {
-#   source = "./modules/rabbit_lambda"
-#   name_base = "RabbitLambda1"
-#   rabbit_mq_broker_arn = module.rabbit_broker_2.rabbit_mq_broker_arn
-#   rabbit_mq_secret_arn = module.rabbit_broker_2.rabbit_mq_secret_arn
-#   rabbit_mq_queue_name = "ExampleQueue"
-# }
