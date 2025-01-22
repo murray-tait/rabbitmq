@@ -7,16 +7,6 @@ terraform {
   }
 }
 
-variable "name_base" {
-  type = string
-  description = "Name the resources in this module should be based on."
-}
-
-variable "subnet_ids" {
-  type = list(string)
-  description = "List of subnets to deploy the RabbitMQ cluster in."
-}
-
 variable "queues" {
   description = "A map of objects representing the queues to be created and their setting. The key will be the name of the queue"
   type = map(object({
@@ -141,22 +131,3 @@ resource "rabbitmq_federation_upstream" "this" {
   }
 }
 
-output "rabbit_mq_broker_arn" {
-  value = aws_mq_broker.rabbit.arn
-  description = "ARN of the Rabbit MQ Broker"
-}
-
-output "rabbit_mq_broker_amqps_endpoint" {
-  value = aws_mq_broker.rabbit.instances.0.endpoints.0
-  description = "Endpoint of the Rabbit MQ Broker"
-}
-
-output "rabbit_mq_broker_https_endpoint" {
-  value = aws_mq_broker.rabbit.instances.0.console_url
-  description = "Endpoint of the Rabbit MQ Broker"
-}
-
-output "rabbit_mq_secret_arn" {
-  value = aws_secretsmanager_secret.secret.arn
-  description = "ARN of the Rabbit MQ Secret"
-}
