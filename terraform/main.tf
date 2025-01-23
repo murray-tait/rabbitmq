@@ -1,4 +1,9 @@
 
+locals {
+  queue_name = "MyQueue"
+  vhost_name = "MyVhost"
+}
+
 variable "region" {
   type    = string
   default = "eu-west-2"
@@ -55,12 +60,12 @@ provider "rabbitmq" {
 
 resource "rabbitmq_vhost" "upstream" {
   provider = rabbitmq.upstream
-  name = "UpstreamVirtualHost"
+  name = local.vhost_name
 }
 
 resource "rabbitmq_vhost" "downstream" {
   provider = rabbitmq.downstream
-  name = "DownstreamVirtualHost"
+  name = local.vhost_name
 }
 
 locals {
@@ -79,7 +84,7 @@ resource "rabbitmq_federation_upstream" "this" {
 
 resource "rabbitmq_queue" "upstream" {
   provider = rabbitmq.upstream
-  name = "UpstreamQueue"
+  name = local.queue_name
   settings {
     durable = true
     auto_delete = false
@@ -89,7 +94,7 @@ resource "rabbitmq_queue" "upstream" {
 
 resource "rabbitmq_queue" "downstream" {
   provider = rabbitmq.downstream
-  name = "DownstreamQueue"
+  name = local.queue_name
   settings {
     durable = true
     auto_delete = false
