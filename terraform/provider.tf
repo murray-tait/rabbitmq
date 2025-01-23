@@ -15,9 +15,3 @@ provider "aws" {
   default_tags { tags = local.tags }
 }
 
-provider "rabbitmq" {
-  endpoint = aws_mq_broker.rabbit.instances.0.console_url
-  username = local.username
-  password = local.password
-}
-

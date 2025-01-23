@@ -7,26 +7,26 @@ terraform {
   }
 }
 
-variable "queues" {
-  description = "A map of objects representing the queues to be created and their setting. The key will be the name of the queue"
-  type = map(object({
-    durable = bool
-    auto_delete = bool
-    upstream_policy = optional(object({
-      priority = number
-      definition = map(string)
-    }))
-  }))
-}
+# variable "queues" {
+#   description = "A map of objects representing the queues to be created and their setting. The key will be the name of the queue"
+#   type = map(object({
+#     durable = bool
+#     auto_delete = bool
+#     upstream_policy = optional(object({
+#       priority = number
+#       definition = map(string)
+#     }))
+#   }))
+# }
 
-variable "upstream" {
-  description = "Optional: Provide an object to connect to an upstream host."
-  type = object({
-    secret_arn = string
-    endpoint_uri = string
-  })
-  nullable = true
-}
+# variable "upstream" {
+#   description = "Optional: Provide an object to connect to an upstream host."
+#   type = object({
+#     secret_arn = string
+#     endpoint_uri = string
+#   })
+#   nullable = true
+# }
 
 resource "random_password" "rabbit_mq_admin" {
   length = 16
@@ -78,56 +78,7 @@ resource "aws_mq_broker" "rabbit" {
   }
 }
 
-provider "rabbitmq" {
-  endpoint = aws_mq_broker.rabbit.instances.0.console_url
-  username = local.username
-  password = local.password
-}
 
-resource "rabbitmq_vhost" "vhost" {
-  name = "MyVirtualHost"
-}
 
-resource "rabbitmq_queue" "queues" {
-  for_each = var.queues
-  name = each.key
-  settings {
-    durable = each.value.durable
-    auto_delete = each.value.auto_delete
-  }
-  vhost = "MyVirtualHost"
-}
 
-/* resource "rabbitmq_policy" "upstream_queue_policy" {
-  for_each = rabbitmq_queue.queues
-  name = "${each.key}-UpstreamPolicy"
-  vhost = "/"
-  policy {
-    apply_to = "queues"
-    definition = var.queues[each.key].upstream_policy.definition
-    pattern = each.key
-    priority = var.queues[each.key].upstream_policy.priority
-  }
-} */
-
-data "aws_secretsmanager_secret_version" "upstream" {
-  count = var.upstream != null ? 1 : 0
-  secret_id = var.upstream.secret_arn
-}
-
-locals {
-  upstream_username = data.aws_secretsmanager_secret_version.upstream != [] ? jsondecode("${data.aws_secretsmanager_secret_version.upstream[0].secret_string}")["username"] : null
-  upstream_password = data.aws_secretsmanager_secret_version.upstream != [] ? jsondecode("${data.aws_secretsmanager_secret_version.upstream[0].secret_string}")["password"] : null
-  upstream_endpoint_uri_trimmed = var.upstream != null ? trimprefix(var.upstream.endpoint_uri, "amqps://") : null
-  upstream_endpoint_url_auth = local.upstream_endpoint_uri_trimmed != null ? "amqps://${local.upstream_username}:${local.upstream_password}@${local.upstream_endpoint_uri_trimmed}/MyVirtualHost" : null
-}
-
-resource "rabbitmq_federation_upstream" "this" {
-  count = var.upstream == null ? 0 : 1
-  name = "Upstream"
-  vhost = "MyVirtualHost"
-  definition {
-    uri = local.upstream_endpoint_url_auth
-  }
-}
 
