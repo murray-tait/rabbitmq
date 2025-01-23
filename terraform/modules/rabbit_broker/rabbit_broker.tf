@@ -78,36 +78,7 @@ resource "aws_mq_broker" "rabbit" {
   }
 }
 
-# provider "rabbitmq" {
-#   endpoint = aws_mq_broker.rabbit.instances.0.console_url
-#   username = local.username
-#   password = local.password
-# }
 
-# resource "rabbitmq_vhost" "vhost" {
-#   name = "MyVirtualHost"
-# }
 
-# resource "rabbitmq_queue" "queues" {
-#   for_each = var.queues
-#   name = each.key
-#   settings {
-#     durable = each.value.durable
-#     auto_delete = each.value.auto_delete
-#   }
-#   vhost = "MyVirtualHost"
-# }
-
-/* resource "rabbitmq_policy" "upstream_queue_policy" {
-  for_each = rabbitmq_queue.queues
-  name = "${each.key}-UpstreamPolicy"
-  vhost = "/"
-  policy {
-    apply_to = "queues"
-    definition = var.queues[each.key].upstream_policy.definition
-    pattern = each.key
-    priority = var.queues[each.key].upstream_policy.priority
-  }
-} */
 
 
