@@ -47,7 +47,7 @@ module "rabbit_downstream" {
   queue_name = local.queue_name
   is_ha = false
   is_public = true
-  upstream_broker_amqps_endpoint = module.rabbit_broker_upstream.rabbit_mq_broker_amqps_endpoint
+  upstream_broker_amqps_endpoint = module.rabbit_upstream.broker_amqps_endpoint
   upstream_rabbit_creds = {
     username = module.rabbit_upstream.rabbit_queue_user_creds["username"]
     password = module.rabbit_upstream.rabbit_queue_user_creds["password"]

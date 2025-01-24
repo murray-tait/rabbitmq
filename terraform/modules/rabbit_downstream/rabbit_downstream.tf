@@ -78,15 +78,7 @@ provider "rabbitmq" {
 }
 
 resource "rabbitmq_vhost" "this" {
-  provider = rabbitmq
   name = var.vhost_name
-}
-
-provider "rabbitmq" {
-  alias = "downstream"
-  endpoint = aws_mq_broker.rabbit.instances.0.console_url
-  username = local.rabbit_admin_password
-  password = local.rabbit_admin_password
 }
 
 resource "rabbitmq_federation_upstream" "this" {
