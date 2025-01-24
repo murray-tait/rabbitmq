@@ -30,6 +30,7 @@ resource "aws_secretsmanager_secret_version" "rabbit_admin" {
 
 data "aws_secretsmanager_secret_version" "rabbit_admin" {
   secret_id = aws_secretsmanager_secret.rabbit_admin.arn
+  version_id = aws_secretsmanager_secret_version.rabbit_admin.version_id
 }
 
 resource "aws_secretsmanager_secret" "rabbit_upstream_federation_user" {
@@ -104,7 +105,7 @@ resource "rabbitmq_policy" "connect_to_upstream_queue" {
   policy {
     apply_to = "queues"
     definition = {"federation-upstream-set": "all"}
-    pattern = var.queue_name
+    pattern = rabbitmq_queue.this.name
     priority = 10
   }
 }

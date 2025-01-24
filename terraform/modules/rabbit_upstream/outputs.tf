@@ -31,3 +31,12 @@ output "rabbit_queue_user_creds" {
   description = "The Credentials for the Queue User created"
   sensitive = true
 }
+
+output "rabbit_admin_creds" {
+  value = {
+    username = jsondecode("${data.aws_secretsmanager_secret_version.rabbit_admin.secret_string}")["username"]
+    password = jsondecode("${data.aws_secretsmanager_secret_version.rabbit_admin.secret_string}")["password"]
+  }
+  description = "The Credentials for the Admin User created"
+  sensitive = true
+}
