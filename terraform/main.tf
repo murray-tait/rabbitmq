@@ -17,18 +17,6 @@ module "vpc" {
   nat = var.nat
 }
 
-module "rabbit_broker_downstream" {
-  source = "./modules/rabbit_broker"
-  name_base = "RabbitBrokerDownstream"
-  subnet_ids = module.vpc.public_subnets
-}
-
-module "rabbit_broker_upstream" {
-  source = "./modules/rabbit_broker"
-  name_base = "RabbitBrokerUpstream"
-  subnet_ids = module.vpc.public_subnets
-}
-
 module "rabbit_upstream" {
   source = "./modules/rabbit_upstream"
   name_base = "RabbitUpstream"
