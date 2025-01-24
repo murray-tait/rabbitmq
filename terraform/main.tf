@@ -37,8 +37,8 @@ module "rabbit_downstream" {
   is_public = true
   upstream_broker_amqps_endpoint = module.rabbit_upstream.broker_amqps_endpoint
   upstream_rabbit_creds = {
-    username = module.rabbit_upstream.rabbit_admin_creds["username"]
-    password = module.rabbit_upstream.rabbit_admin_creds["password"]
+    username = module.rabbit_upstream.rabbit_queue_user_creds["username"]
+    password = module.rabbit_upstream.rabbit_queue_user_creds["password"]
   }
   upstream_vhost_name = local.vhost_name
 }

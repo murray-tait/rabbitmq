@@ -7,27 +7,6 @@ terraform {
   }
 }
 
-# variable "queues" {
-#   description = "A map of objects representing the queues to be created and their setting. The key will be the name of the queue"
-#   type = map(object({
-#     durable = bool
-#     auto_delete = bool
-#     upstream_policy = optional(object({
-#       priority = number
-#       definition = map(string)
-#     }))
-#   }))
-# }
-
-# variable "upstream" {
-#   description = "Optional: Provide an object to connect to an upstream host."
-#   type = object({
-#     secret_arn = string
-#     endpoint_uri = string
-#   })
-#   nullable = true
-# }
-
 resource "random_password" "rabbit_mq_admin" {
   length = 16
   special = false

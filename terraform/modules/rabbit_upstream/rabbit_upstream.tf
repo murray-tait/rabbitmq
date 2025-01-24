@@ -75,8 +75,6 @@ resource "aws_mq_broker" "rabbit" {
 locals {
   rabbit_admin_username = (jsondecode("${data.aws_secretsmanager_secret_version.rabbit_admin.secret_string}"))["username"]
   rabbit_admin_password = (jsondecode("${data.aws_secretsmanager_secret_version.rabbit_admin.secret_string}"))["password"]
-  #endpoint_amqps_trimmed = trimprefix("${aws_mq_broker.rabbit.instances.0.console_url}", "amqps://")
-  #endpoint_amqps_auth = "amqps://${var.upstream_rabbit_creds["username"]}:${var.upstream_rabbit_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
 }
 
 provider "rabbitmq" {
@@ -114,7 +112,7 @@ resource "rabbitmq_permissions" "rabbit_queue_user" {
   permissions {
     configure = ""
     write     = ""
-    read      = rabbitmq_queue.this.name
+    read      = "^${rabbitmq_queue.this.name}$"
   }
 }
 
