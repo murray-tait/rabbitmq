@@ -39,21 +39,21 @@ module "rabbit_upstream" {
   is_public = true
 }
 
-# module "rabbit_downstream" {
-#   source = "./modules/rabbit_downstream"
-#   name_base = "RabbitDownstream"
-#   subnet_ids = [module.vpc.public_subnets[0]]
-#   vhost_name = local.vhost_name
-#   queue_name = local.queue_name
-#   is_ha = false
-#   is_public = true
-#   upstream_broker_amqps_endpoint = module.rabbit_broker_upstream.rabbit_mq_broker_https_endpoint
-#   upstream_rabbit_creds = {
-#     username = module.rabbit_upstream.rabbit_queue_user_creds["username"]
-#     password = module.rabbit_upstream.rabbit_queue_user_creds["password"]
-#   }
-#   upstream_vhost_name = local.vhost_name
-# }
+module "rabbit_downstream" {
+  source = "./modules/rabbit_downstream"
+  name_base = "RabbitDownstream"
+  subnet_ids = [module.vpc.public_subnets[0]]
+  vhost_name = local.vhost_name
+  queue_name = local.queue_name
+  is_ha = false
+  is_public = true
+  upstream_broker_amqps_endpoint = module.rabbit_broker_upstream.rabbit_mq_broker_amqps_endpoint
+  upstream_rabbit_creds = {
+    username = module.rabbit_upstream.rabbit_queue_user_creds["username"]
+    password = module.rabbit_upstream.rabbit_queue_user_creds["password"]
+  }
+  upstream_vhost_name = local.vhost_name
+}
 
 
 

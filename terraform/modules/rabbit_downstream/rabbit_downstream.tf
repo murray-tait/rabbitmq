@@ -28,6 +28,10 @@ resource "aws_secretsmanager_secret_version" "rabbit_admin" {
   })
 }
 
+data "aws_secretsmanager_secret_version" "rabbit_admin" {
+  secret_id = aws_secretsmanager_secret.rabbit_admin.arn
+}
+
 resource "aws_secretsmanager_secret" "rabbit_upstream_federation_user" {
   name = "${var.name_base}/RabbitUpstreamFederationUser"
   recovery_window_in_days = 0
@@ -39,10 +43,6 @@ resource "aws_secretsmanager_secret_version" "rabbit_upstream_federation_user" {
     username    = var.upstream_rabbit_creds["username"]
     password    = var.upstream_rabbit_creds["password"]
   })
-}
-
-data "aws_secretsmanager_secret_version" "rabbit_admin" {
-  secret_id = aws_secretsmanager_secret.rabbit_admin.arn
 }
 
 locals {
@@ -91,7 +91,7 @@ provider "rabbitmq" {
 
 resource "rabbitmq_federation_upstream" "this" {
   name = "FederationToUpstream"
-  vhost = var.vhost_name
+  vhost = rabbitmq_vhost.this.name
   definition {
     uri = local.upstream_endpoint_amqps_auth
   }
@@ -103,7 +103,7 @@ resource "rabbitmq_queue" "this" {
     durable = true
     auto_delete = false
   }
-  vhost = var.vhost_name
+  vhost = rabbitmq_vhost.this.name
 }
 
 resource "rabbitmq_policy" "connect_to_upstream_queue" {
