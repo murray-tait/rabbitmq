@@ -106,7 +106,7 @@ resource "rabbitmq_policy" "connect_to_upstream_queue" {
     apply_to = "queues"
     definition = {"federation-upstream-set": "all"}
     pattern = rabbitmq_queue.this.name
-    priority = 10
+    priority = 1
   }
 }
 
