@@ -1,10 +1,8 @@
 locals {
   domain                = var.domain
   environment           = coalesce(var.environment, terraform.workspace)
-  app_name              = "labelling"
-  project_name          = "translate"
-  api_gw_subdomain      = "api.${local.fqdn}"
-  callback_gw_subdomain = "callbacks.${local.fqdn}"
+  app_name              = "integration"
+  project_name          = "NextGenELN"
 }
 
 locals {
@@ -24,14 +22,15 @@ locals {
   tags = {
     "AccountId"       = local.account_id
     "Region"          = local.region
-    "Organization"    = "ETS"
-    "CostCenter"      = "4374"
-    "Requestor"       = "klwv406"
-    "IDMD_Task"       = "Labelling"
-    "applicationname" = "${local.project_name}-${local.app_name}"
+    "Organization"    = ""
+    "CostCenter"      = ""
+    "Requestor"       = ""
+    "IDMD_Task"       = ""
+    #"applicationname" = "${local.project_name}-${local.app_name}"
+    "applicationname" = "translate-labelling"
     "managed"         = "terraform"
     "sub_system"      = var.sub_system
-    "repository"      = "https://github.com/azu-ecs/translate-labeling-${var.sub_system}"
+    "repository"      = ""
   }
 }
 
@@ -53,6 +52,7 @@ locals {
 locals {
   account_id_map = {
     dev1     = "127214154594"
+    murray   = "127214154594"
     endtoend = "481652375433"
     train    = ""
     preprod  = ""
