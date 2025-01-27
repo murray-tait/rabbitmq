@@ -87,6 +87,7 @@ resource "rabbitmq_federation_upstream" "this" {
   vhost = rabbitmq_vhost.this.name
   definition {
     uri = local.upstream_endpoint_amqps_auth
+    queue = var.queue_name
   }
 }
 
@@ -105,7 +106,7 @@ resource "rabbitmq_policy" "connect_to_upstream_queue" {
   policy {
     apply_to = "queues"
     definition = {"federation-upstream-set": "all"}
-    pattern = rabbitmq_queue.this.name
+    pattern = var.queue_name
     priority = 1
   }
 }

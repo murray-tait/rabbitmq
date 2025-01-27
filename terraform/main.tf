@@ -47,7 +47,7 @@ module "rabbit_lambda" {
   source = "./modules/rabbit_lambda"
   name_base = "maris-proxy"
   rabbit_mq_broker_arn = "arn:aws:mq:eu-west-1:127214154594:broker:RabbitDownstream-Rabbit:b-067adb0f-64ed-4dd7-8e6f-6362206cd918"
-  rabbit_mq_secret_arn = "arn:aws:secretsmanager:eu-west-1:127214154594:secret:RabbitUpstream/RabbitAdmin-d1keAz"
+  rabbit_mq_secret_arn = "arn:aws:secretsmanager:eu-west-1:127214154594:secret:RabbitDownstream/RabbitAdmin-gwFsbd"
   rabbit_mq_queue_name = "MyQueue"
   rabbit_mq_virtual_host = "MyVhost"
 }

@@ -34,16 +34,15 @@ module "lambda" {
       bisect_batch_on_function_error = false
       enabled          = true
       queues           = ["MyQueue"]
-      
       source_access_configuration = [
         {
-        type = "VIRTUAL_HOST"
-        uri  = "MyVhost"
+          type = "VIRTUAL_HOST"
+          uri  = "MyVhost"
         },
         {
-        type = "BASIC_AUTH"
-        uri  = var.rabbit_mq_secret_arn
-        }        
+          type = "BASIC_AUTH"
+          uri  = var.rabbit_mq_secret_arn
+        }
       ]
     }
   }
