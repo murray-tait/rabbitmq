@@ -41,8 +41,3 @@ variable "private_subnets" {
   }
 }
 
-variable "nat" {
-  type = bool
-  default = false
-}
-

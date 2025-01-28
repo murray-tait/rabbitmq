@@ -9,16 +9,6 @@ variable "vpc_cidr" {
   }
 }
 
-variable "nat" {
-  default     = false
-  type        = bool
-  description = "true to create nat gateways. false for no nat gateways."
-  validation {
-    condition     = var.nat == true || var.nat == false
-    error_message = "Must be either true or false."
-  }
-}
-
 variable "public_subnets" {
   default = {
     "a" = "10.2.1.0/24",
@@ -110,28 +100,10 @@ resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.tf_vpc.id
 }
 
-resource "aws_eip" "eips_nat" {
-  for_each = var.nat ? aws_subnet.public_subnet : {}
-  domain = "vpc"
-}
-
-resource "aws_nat_gateway" "nat_gw" {
-  for_each      = var.nat ? aws_eip.eips_nat : {}
-  allocation_id = each.value.id
-  subnet_id     = aws_subnet.public_subnet[each.key].id
-}
-
 resource "aws_route" "route_igw" {
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.igw.id
   route_table_id         = aws_route_table.public_route_table.id
-}
-
-resource "aws_route" "route_nat" {
-  for_each               = var.nat ? aws_route_table.private_route_table : {}
-  destination_cidr_block = "0.0.0.0/0"
-  route_table_id         = aws_route_table.private_route_table[each.key].id
-  nat_gateway_id         = aws_nat_gateway.nat_gw[each.key].id
 }
 
 output "vpc_id" {

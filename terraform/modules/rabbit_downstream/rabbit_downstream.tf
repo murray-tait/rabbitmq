@@ -59,7 +59,7 @@ resource "aws_mq_broker" "rabbit" {
   engine_version = "3.13"
   host_instance_type = "mq.t3.micro"
   auto_minor_version_upgrade = true
-  publicly_accessible = true
+  publicly_accessible = var.is_public
   apply_immediately = true
   subnet_ids = var.subnet_ids
   user {
