@@ -59,7 +59,7 @@ resource "aws_mq_broker" "rabbit" {
   engine_version = "3.13"
   host_instance_type = "mq.t3.micro"
   auto_minor_version_upgrade = true
-  publicly_accessible = var.is_public ? true : false
+  publicly_accessible = var.is_public
   apply_immediately = true
   subnet_ids = var.subnet_ids
   user {
@@ -85,6 +85,7 @@ provider "rabbitmq" {
 
 resource "rabbitmq_vhost" "this" {
   name = var.vhost_name
+  depends_on = [ aws_mq_broker.rabbit ]
 }
 
 resource "rabbitmq_queue" "this" {
@@ -93,7 +94,7 @@ resource "rabbitmq_queue" "this" {
     durable = true
     auto_delete = false
   }
-  vhost = var.vhost_name
+  vhost = rabbitmq_vhost.this.name
 }
 
 data "aws_secretsmanager_secret_version" "rabbit_queue_user" {

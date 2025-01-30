@@ -80,6 +80,7 @@ provider "rabbitmq" {
 
 resource "rabbitmq_vhost" "this" {
   name = var.vhost_name
+  depends_on = [ aws_mq_broker.rabbit ]
 }
 
 resource "rabbitmq_federation_upstream" "this" {
@@ -110,10 +111,3 @@ resource "rabbitmq_policy" "connect_to_upstream_queue" {
     priority = 1
   }
 }
-
-
-
-
-
-
-

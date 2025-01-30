@@ -40,3 +40,4 @@ output "rabbit_admin_creds" {
   description = "The Credentials for the Admin User created"
   sensitive = true
 }
+
