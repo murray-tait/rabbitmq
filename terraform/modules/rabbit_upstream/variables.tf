@@ -33,3 +33,8 @@ variable "exchange_name" {
   type = string
   description = "The name of the exchange to create on the upstream broker."
 }
+
+variable "federation_user_name" {
+  type = string
+  description = "The name of the Rabbit user used for federating with downstream"
+}

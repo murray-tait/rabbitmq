@@ -17,9 +17,10 @@ module "rabbit_upstream" {
   subnet_ids = [module.vpc.public_subnets[0]]
   is_ha = false
   is_public = true
-  vhost_name = "UpstreamVhost"
-  queue_name = "UpstreamQueue"
-  exchange_name = "UpstreamExchange"
+  vhost_name = "test_vhost"
+  queue_name = "test_queue"
+  exchange_name = "test_exchange"
+  federation_user_name = "federation_user"
 }
 
 module "rabbit_downstream" {
@@ -28,25 +29,24 @@ module "rabbit_downstream" {
   subnet_ids = [module.vpc.public_subnets[0]]
   is_ha = false
   is_public = true
-  vhost_name = "DownstreamVhost"
-  queue_name = "DownstreamQueue"
-  exchange_name = "DownstreamExchange"
+  vhost_name = "test_vhost"
+  queue_name = "test_queue"
+  exchange_name = "test_exchange"
+  federation_user_name = "federation_user"
+  federation_upstream_name = "federation_upstream"
+  policy_name = "federation_policy"
   upstream_broker_amqps_endpoint = module.rabbit_upstream.broker_amqps_endpoint
   upstream_rabbit_creds = {
     username = module.rabbit_upstream.rabbit_admin_creds["username"]
     password = module.rabbit_upstream.rabbit_admin_creds["password"]
   }
-  upstream_queue_creds = {
-    username = module.rabbit_upstream.queue_user_creds["username"]
-    password = module.rabbit_upstream.queue_user_creds["password"]
+  upstream_federation_creds = {
+    username = module.rabbit_upstream.federation_user_creds["username"]
+    password = module.rabbit_upstream.federation_user_creds["password"]
   }
-  upstream_exchange_creds = {
-    username = module.rabbit_upstream.exchange_user_creds["username"]
-    password = module.rabbit_upstream.exchange_user_creds["password"]
-  }
-  upstream_vhost_name = "UpstreamVhost"
-  upstream_queue_name = "UpstreamQueue"
-  upstream_exchange_name = "UpstreamExchange"
+  upstream_vhost_name = module.rabbit_upstream.vhost_name
+  upstream_queue_name = module.rabbit_upstream.queue_name
+  upstream_exchange_name = module.rabbit_upstream.exchange_name
 }
 
 # module "rabbit_lambda" {

@@ -23,6 +23,21 @@ variable "exchange_name" {
   description = "The name of the exchange to create on the downstream broker."
 }
 
+variable "federation_user_name" {
+  type = string
+  description = "Federation user"
+}
+
+variable "federation_upstream_name" {
+  type = string
+  description = "Name of the federation."
+}
+
+variable "policy_name" {
+  type = string
+  description = "Name of the policy to use."
+}
+
 variable "is_public" {
   type = bool
   description = "Whether the broker should be public or not."
@@ -64,20 +79,11 @@ variable "upstream_rabbit_creds" {
   sensitive = true
 }
 
-variable "upstream_queue_creds" {
+variable "upstream_federation_creds" {
   type = object({
     username = string
     password = string
   })
   description = "The RabbitMQ credentials to use to access the upstream queue."
-  sensitive = true
-}
-
-variable "upstream_exchange_creds" {
-  type = object({
-    username = string
-    password = string
-  })
-  description = "The RabbitMQ credentials to use to access the upstream exchange."
   sensitive = true
 }

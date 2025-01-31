@@ -28,7 +28,7 @@ resource "aws_secretsmanager_secret_version" "rabbit_admin" {
   })
 }
 
-resource "random_password" "queue_user" {
+resource "random_password" "federation_user" {
   length = 32
   special = false
   min_lower = 1
@@ -36,37 +36,16 @@ resource "random_password" "queue_user" {
   min_upper = 1
 }
 
-resource "aws_secretsmanager_secret" "queue_user" {
-  name = "${var.name_base}/RabbitQueueUser"
+resource "aws_secretsmanager_secret" "federation_user" {
+  name = "${var.name_base}/FederationUser"
   recovery_window_in_days = 0
 }
 
-resource "aws_secretsmanager_secret_version" "queue_user" {
-  secret_id     = aws_secretsmanager_secret.queue_user.arn
+resource "aws_secretsmanager_secret_version" "federation_user" {
+  secret_id     = aws_secretsmanager_secret.federation_user.arn
   secret_string = jsonencode({
-    username    = "RabbitQueueUser"
-    password    = "${random_password.queue_user.result}"
-  })
-}
-
-resource "random_password" "exchange_user" {
-  length = 32
-  special = false
-  min_lower = 1
-  min_numeric = 1
-  min_upper = 1
-}
-
-resource "aws_secretsmanager_secret" "exchange_user" {
-  name = "${var.name_base}/RabbitExchangeUser"
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "exchange_user" {
-  secret_id     = aws_secretsmanager_secret.exchange_user.arn
-  secret_string = jsonencode({
-    username    = "RabbitExchangeUser"
-    password    = "${random_password.exchange_user.result}"
+    username    = var.federation_user_name
+    password    = "${random_password.federation_user.result}"
   })
 }
 
@@ -104,68 +83,57 @@ provider "rabbitmq" {
   password = local.rabbit_admin_password
 }
 
-# resource "rabbitmq_vhost" "this" {
-#   name = var.vhost_name
-#   depends_on = [ aws_mq_broker.rabbit ]
-# }
-
-# resource "rabbitmq_queue" "this" {
-#   name = var.queue_name
-#   settings {
-#     durable = true
-#     auto_delete = false
-#   }
-#   vhost = rabbitmq_vhost.this.name
-# }
-
-# resource "rabbitmq_exchange" "this" {
-#   name = var.exchange_name
-#   vhost = var.vhost_name
-#   settings {
-#     type = "direct"
-#     durable = true
-#   }
-# }
-
-data "aws_secretsmanager_secret_version" "queue_user" {
-  secret_id = aws_secretsmanager_secret.queue_user.id
-  version_id = aws_secretsmanager_secret_version.queue_user.version_id
+resource "rabbitmq_vhost" "this" {
+  name = var.vhost_name
+  depends_on = [ aws_mq_broker.rabbit ]
 }
 
-data "aws_secretsmanager_secret_version" "exchange_user" {
-  secret_id = aws_secretsmanager_secret.exchange_user.id
-  version_id = aws_secretsmanager_secret_version.exchange_user.version_id
+resource "rabbitmq_queue" "this" {
+  name = var.queue_name
+  settings {
+    durable = true
+    auto_delete = false
+  }
+  vhost = rabbitmq_vhost.this.name
 }
 
-resource "rabbitmq_user" "queue_user" {
-  name = (jsondecode("${data.aws_secretsmanager_secret_version.queue_user.secret_string}"))["username"]
-  password = (jsondecode("${data.aws_secretsmanager_secret_version.queue_user.secret_string}"))["password"]
+resource "rabbitmq_exchange" "this" {
+  name = var.exchange_name
+  vhost = rabbitmq_vhost.this.name
+  settings {
+    type = "fanout"
+    durable = true
+  }
 }
 
-resource "rabbitmq_user" "exchange_user" {
-  name = (jsondecode("${data.aws_secretsmanager_secret_version.exchange_user.secret_string}"))["username"]
-  password = (jsondecode("${data.aws_secretsmanager_secret_version.exchange_user.secret_string}"))["password"]
+resource "rabbitmq_binding" "this" {
+  source           = rabbitmq_exchange.this.name
+  vhost            = rabbitmq_vhost.this.name
+  destination      = rabbitmq_queue.this.name
+  destination_type = "queue"
 }
 
-resource "rabbitmq_permissions" "queue_user" {
-  user = rabbitmq_user.queue_user.name
+data "aws_secretsmanager_secret_version" "federation_user" {
+  secret_id = aws_secretsmanager_secret.federation_user.id
+  version_id = aws_secretsmanager_secret_version.federation_user.version_id
+}
+
+resource "rabbitmq_user" "federation_user" {
+  name = (jsondecode("${data.aws_secretsmanager_secret_version.federation_user.secret_string}"))["username"]
+  password = (jsondecode("${data.aws_secretsmanager_secret_version.federation_user.secret_string}"))["password"]
+  tags = ["management"]
+}
+
+resource "rabbitmq_permissions" "federation_user" {
+  user = rabbitmq_user.federation_user.name
   vhost = rabbitmq_vhost.this.name
   permissions {
-    configure = ""
-    write     = ""
+    configure = ".*"
+    write     = ".*"
     read      = ".*"
   }
 }
 
-resource "rabbitmq_permissions" "exchange_user" {
-  user = rabbitmq_user.exchange_user.name
-  vhost = rabbitmq_vhost.this.name
-  permissions {
-    configure = ""
-    write     = ""
-    read      = ".*"
-  }
-}
 
 
 

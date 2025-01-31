@@ -46,13 +46,33 @@ resource "aws_secretsmanager_secret_version" "rabbit_upstream_federation_user" {
   })
 }
 
+resource "random_password" "federation_user" {
+  length = 32
+  special = false
+  min_lower = 1
+  min_numeric = 1
+  min_upper = 1
+}
+
+resource "aws_secretsmanager_secret" "federation_user" {
+  name = "${var.name_base}/FederationUser"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "federation_user" {
+  secret_id     = aws_secretsmanager_secret.federation_user.arn
+  secret_string = jsonencode({
+    username    = "federation_user"
+    password    = "${random_password.federation_user.result}"
+  })
+}
+
 locals {
   rabbit_admin_username = (jsondecode("${data.aws_secretsmanager_secret_version.rabbit_admin.secret_string}"))["username"]
   rabbit_admin_password = (jsondecode("${data.aws_secretsmanager_secret_version.rabbit_admin.secret_string}"))["password"]
   upstream_endpoint_amqps_trimmed = trimprefix(var.upstream_broker_amqps_endpoint, "amqps://")
   upstream_endpoint_amqps_auth_admin = "amqps://${var.upstream_rabbit_creds["username"]}:${var.upstream_rabbit_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
-  upstream_endpoint_amqps_auth_exchange = "amqps://${var.upstream_exchange_creds["username"]}:${var.upstream_exchange_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
-  upstream_endpoint_amqps_auth_queue = "amqps://${var.upstream_queue_creds["username"]}:${var.upstream_queue_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
+  upstream_endpoint_amqps_auth_federation_user = "amqps://${var.upstream_federation_creds["username"]}:${var.upstream_federation_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
 }
 
 resource "aws_mq_broker" "rabbit" {
@@ -81,7 +101,7 @@ provider "rabbitmq" {
 }
 
 resource "rabbitmq_vhost" "this" {
-  name = "DownstreamVhost"
+  name = var.vhost_name
   depends_on = [ aws_mq_broker.rabbit ]
 }
 
@@ -91,14 +111,14 @@ resource "rabbitmq_queue" "this" {
     durable = true
     auto_delete = false
   }
-  vhost = var.vhost_name
+  vhost = rabbitmq_vhost.this.name
 }
 
 resource "rabbitmq_exchange" "this" {
   name = var.exchange_name
-  vhost = var.vhost_name
+  vhost = rabbitmq_vhost.this.name
   settings {
-    type = "direct"
+    type = "fanout"
     durable = true
   }
 }
@@ -110,46 +130,45 @@ resource "rabbitmq_binding" "this" {
   destination_type = "queue"
 }
 
-resource "rabbitmq_federation_upstream" "queue" {
-  name = "QueueFederation"
+data "aws_secretsmanager_secret_version" "federation_user" {
+  secret_id = aws_secretsmanager_secret.federation_user.id
+  version_id = aws_secretsmanager_secret_version.federation_user.version_id
+}
+
+resource "rabbitmq_user" "federation_user" {
+  name = (jsondecode("${data.aws_secretsmanager_secret_version.federation_user.secret_string}"))["username"]
+  password = (jsondecode("${data.aws_secretsmanager_secret_version.federation_user.secret_string}"))["password"]
+  tags = ["management"]
+}
+
+resource "rabbitmq_permissions" "federation_user" {
+  user = rabbitmq_user.federation_user.name
+  vhost = rabbitmq_vhost.this.name
+  permissions {
+    configure = ".*"
+    write     = ".*"
+    read      = ".*"
+  }
+}
+
+resource "rabbitmq_federation_upstream" "this" {
+  name = var.federation_upstream_name
   vhost = rabbitmq_vhost.this.name
   definition {
-    uri = local.upstream_endpoint_amqps_auth_queue
+    uri = local.upstream_endpoint_amqps_auth_federation_user
     queue = var.upstream_queue_name
   }
 }
 
-resource "rabbitmq_federation_upstream" "exchange" {
-  name = "ExchangeFederation"
-  vhost = rabbitmq_vhost.this.name
-  definition {
-    uri = local.upstream_endpoint_amqps_auth_exchange
-    exchange = var.upstream_exchange_name
-  }
-}
-
-resource "rabbitmq_policy" "queue" {
-  name = "QueuePolicy"
+resource "rabbitmq_policy" "this" {
+  name = var.policy_name
   vhost = rabbitmq_vhost.this.name
   policy {
-    apply_to = "queues"
+    apply_to = "all"
     definition = {
       federation-upstream-set = "all"
     }
-    pattern = "^${rabbitmq_queue.this.name}$"
-    priority = 1
-  }
-}
-
-resource "rabbitmq_policy" "exchange" {
-  name = "ExchangePolicy"
-  vhost = rabbitmq_vhost.this.name
-  policy {
-    apply_to = "exchanges"
-    definition = {
-      federation-upstream-set = "all"
-    }
-    pattern = "^${rabbitmq_exchange.this.name}$"
+    pattern = ".*test.*"
     priority = 1
   }
 }
