@@ -10,12 +10,17 @@ variable "subnet_ids" {
 
 variable "vhost_name" {
   type = string
-  description = "Name of the virtual host to create that the queue is created in."
+  description = "The name of the virtual host to create on the downstream broker."
 }
 
 variable "queue_name" {
   type = string
-  description = "Name of the queue to create."
+  description = "The name of the queue to create on the downstream broker."
+}
+
+variable "exchange_name" {
+  type = string
+  description = "The name of the exchange to create on the downstream broker."
 }
 
 variable "is_public" {
@@ -40,6 +45,16 @@ variable "upstream_vhost_name" {
   description = "The name of the virtual host on the upstream broker to federate with."
 }
 
+variable "upstream_queue_name" {
+  type = string
+  description = "The name of the queue on the upstream broker to federate with."
+}
+
+variable "upstream_exchange_name" {
+  type = string
+  description = "The name of the exchange on the upstream broker to federate with."
+}
+
 variable "upstream_rabbit_creds" {
   type = object({
     username = string
@@ -49,3 +64,20 @@ variable "upstream_rabbit_creds" {
   sensitive = true
 }
 
+variable "upstream_queue_creds" {
+  type = object({
+    username = string
+    password = string
+  })
+  description = "The RabbitMQ credentials to use to access the upstream queue."
+  sensitive = true
+}
+
+variable "upstream_exchange_creds" {
+  type = object({
+    username = string
+    password = string
+  })
+  description = "The RabbitMQ credentials to use to access the upstream exchange."
+  sensitive = true
+}

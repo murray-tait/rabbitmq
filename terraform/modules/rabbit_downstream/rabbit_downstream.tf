@@ -50,7 +50,9 @@ locals {
   rabbit_admin_username = (jsondecode("${data.aws_secretsmanager_secret_version.rabbit_admin.secret_string}"))["username"]
   rabbit_admin_password = (jsondecode("${data.aws_secretsmanager_secret_version.rabbit_admin.secret_string}"))["password"]
   upstream_endpoint_amqps_trimmed = trimprefix(var.upstream_broker_amqps_endpoint, "amqps://")
-  upstream_endpoint_amqps_auth = "amqps://${var.upstream_rabbit_creds["username"]}:${var.upstream_rabbit_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
+  upstream_endpoint_amqps_auth_admin = "amqps://${var.upstream_rabbit_creds["username"]}:${var.upstream_rabbit_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
+  upstream_endpoint_amqps_auth_exchange = "amqps://${var.upstream_exchange_creds["username"]}:${var.upstream_exchange_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
+  upstream_endpoint_amqps_auth_queue = "amqps://${var.upstream_queue_creds["username"]}:${var.upstream_queue_creds["password"]}@${local.upstream_endpoint_amqps_trimmed}/${var.upstream_vhost_name}"
 }
 
 resource "aws_mq_broker" "rabbit" {
@@ -79,17 +81,8 @@ provider "rabbitmq" {
 }
 
 resource "rabbitmq_vhost" "this" {
-  name = var.vhost_name
+  name = "DownstreamVhost"
   depends_on = [ aws_mq_broker.rabbit ]
-}
-
-resource "rabbitmq_federation_upstream" "this" {
-  name = "FederationToUpstream"
-  vhost = rabbitmq_vhost.this.name
-  definition {
-    uri = local.upstream_endpoint_amqps_auth
-    queue = var.queue_name
-  }
 }
 
 resource "rabbitmq_queue" "this" {
@@ -98,16 +91,65 @@ resource "rabbitmq_queue" "this" {
     durable = true
     auto_delete = false
   }
-  vhost = rabbitmq_vhost.this.name
+  vhost = var.vhost_name
 }
 
-resource "rabbitmq_policy" "connect_to_upstream_queue" {
-  name = "PullFromUpstreamQueue"
+resource "rabbitmq_exchange" "this" {
+  name = var.exchange_name
+  vhost = var.vhost_name
+  settings {
+    type = "direct"
+    durable = true
+  }
+}
+
+resource "rabbitmq_binding" "this" {
+  source           = rabbitmq_exchange.this.name
+  vhost            = rabbitmq_vhost.this.name
+  destination      = rabbitmq_queue.this.name
+  destination_type = "queue"
+}
+
+resource "rabbitmq_federation_upstream" "queue" {
+  name = "QueueFederation"
+  vhost = rabbitmq_vhost.this.name
+  definition {
+    uri = local.upstream_endpoint_amqps_auth_queue
+    queue = var.upstream_queue_name
+  }
+}
+
+resource "rabbitmq_federation_upstream" "exchange" {
+  name = "ExchangeFederation"
+  vhost = rabbitmq_vhost.this.name
+  definition {
+    uri = local.upstream_endpoint_amqps_auth_exchange
+    exchange = var.upstream_exchange_name
+  }
+}
+
+resource "rabbitmq_policy" "queue" {
+  name = "QueuePolicy"
   vhost = rabbitmq_vhost.this.name
   policy {
     apply_to = "queues"
-    definition = {"federation-upstream-set": "all"}
-    pattern = var.queue_name
+    definition = {
+      federation-upstream-set = "all"
+    }
+    pattern = "^${rabbitmq_queue.this.name}$"
+    priority = 1
+  }
+}
+
+resource "rabbitmq_policy" "exchange" {
+  name = "ExchangePolicy"
+  vhost = rabbitmq_vhost.this.name
+  policy {
+    apply_to = "exchanges"
+    definition = {
+      federation-upstream-set = "all"
+    }
+    pattern = "^${rabbitmq_exchange.this.name}$"
     priority = 1
   }
 }

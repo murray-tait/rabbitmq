@@ -1,3 +1,13 @@
+# output "vhost_name" {
+#   value = rabbitmq_vhost.this.name
+#   description = "Name of the virtual host" 
+# }
+
+# output "queue_name" {
+#   value = rabbitmq_queue.this.name
+#   description = "Name of the queue"
+# }
+
 output "broker_arn" {
   value = aws_mq_broker.rabbit.arn
   description = "ARN of the Rabbit MQ Broker"

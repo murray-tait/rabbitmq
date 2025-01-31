@@ -1,9 +1,4 @@
 
-locals {
-  queue_name = "MyQueue"
-  vhost_name = "MyVhost"
-}
-
 variable "region" {
   type    = string
   default = "eu-west-2"
@@ -20,26 +15,38 @@ module "rabbit_upstream" {
   source = "./modules/rabbit_upstream"
   name_base = "RabbitUpstream"
   subnet_ids = [module.vpc.public_subnets[0]]
-  vhost_name = local.vhost_name
-  queue_name = local.queue_name
   is_ha = false
   is_public = true
+  vhost_name = "UpstreamVhost"
+  queue_name = "UpstreamQueue"
+  exchange_name = "UpstreamExchange"
 }
 
 module "rabbit_downstream" {
   source = "./modules/rabbit_downstream"
   name_base = "RabbitDownstream"
   subnet_ids = [module.vpc.public_subnets[0]]
-  vhost_name = local.vhost_name
-  queue_name = local.queue_name
   is_ha = false
   is_public = true
+  vhost_name = "DownstreamVhost"
+  queue_name = "DownstreamQueue"
+  exchange_name = "DownstreamExchange"
   upstream_broker_amqps_endpoint = module.rabbit_upstream.broker_amqps_endpoint
   upstream_rabbit_creds = {
-    username = module.rabbit_upstream.rabbit_queue_user_creds["username"]
-    password = module.rabbit_upstream.rabbit_queue_user_creds["password"]
+    username = module.rabbit_upstream.rabbit_admin_creds["username"]
+    password = module.rabbit_upstream.rabbit_admin_creds["password"]
   }
-  upstream_vhost_name = local.vhost_name
+  upstream_queue_creds = {
+    username = module.rabbit_upstream.queue_user_creds["username"]
+    password = module.rabbit_upstream.queue_user_creds["password"]
+  }
+  upstream_exchange_creds = {
+    username = module.rabbit_upstream.exchange_user_creds["username"]
+    password = module.rabbit_upstream.exchange_user_creds["password"]
+  }
+  upstream_vhost_name = "UpstreamVhost"
+  upstream_queue_name = "UpstreamQueue"
+  upstream_exchange_name = "UpstreamExchange"
 }
 
 # module "rabbit_lambda" {
