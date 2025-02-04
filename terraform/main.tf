@@ -54,8 +54,12 @@ module "docker_rabbit_consumer" {
   source = "./modules/docker_rabbit_consumer/tf"
   name_base = "RabbitConsumer"
   vpc_id = module.vpc.vpc_id
-  subnet_ids = [module.vpc.public_subnets[0]]
+  subnet_ids = [module.vpc.private_subnets[0]]
   rabbit_secret_arn = "arn:aws:secretsmanager:eu-west-1:127214154594:secret:RabbitConsume/UpstreamSecret"
+}
+
+output "debug_subnet_ids" {
+  value = [module.vpc.private_subnets[0]]
 }
 
 # module "rabbit_lambda" {

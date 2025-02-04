@@ -40,6 +40,7 @@ module "ecr" {
   source = "terraform-aws-modules/ecr/aws"
   version = "2.3.1"
   repository_name = lower(var.name_base)
+  repository_force_delete = true
   repository_lifecycle_policy = jsonencode({
     rules = [
       {
@@ -57,7 +58,6 @@ module "ecr" {
       }
     ]
   })
-
   tags = {
     Terraform   = "true"
     Environment = "dev"
@@ -80,26 +80,54 @@ resource "aws_security_group" "this" {
   }
 }
 
-module "ecs_task_execution_role" {
-  role_name_prefix = "${var.name_base}-ecs-task-execution-role"
+module "ecs_execution_role" {
+  role_name_prefix = "${var.name_base}-ecs-execution-role"
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
   version = "5.52.2"
-  trusted_role_services = ["ecs-tasks.amazonaws.com"]
+  trusted_role_services = ["ecs.amazonaws.com", "ecs-tasks.amazonaws.com"]
   create_role = true
+  role_requires_mfa = false
   custom_role_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
+  inline_policy_statements = [
+    {
+      sid = "SecretsManagerAccess",
+      effect = "Allow",
+      actions = ["secretsmanager:Describe*", "secretsmanager:List*", "secretsmanager:Get*"]
+      resources = ["${var.rabbit_secret_arn}"]
+    },
+    {
+      sid = "CloudwatchAccess",
+      effect = "Allow",
+      actions = ["cloudwatch:*"]
+      resources = ["${var.rabbit_secret_arn}"]
+    },
+    {
+      sid = "SqsAccess",
+      effect = "Allow",
+      actions = ["sqs:SendMessage","sqs:Get*", "sqs:List*"]
+      resources = ["${module.sqs.queue_arn}"]
+    }
+  ]
 }
 
 module "ecs_task_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
-  trusted_role_services = ["ecs-tasks.amazonaws.com"]
+  trusted_role_services = ["ecs.amazonaws.com","ecs-tasks.amazonaws.com"]
   version = "5.52.2"
   role_name_prefix = "${var.name_base}-ecs-task-role"
+  role_requires_mfa = false
   create_role = true
   inline_policy_statements = [
     {
       sid = "SecretsManagerAccess",
       effect = "Allow",
       actions = ["secretsmanager:Describe*", "secretsmanager:List*", "secretsmanager:Get*"]
+      resources = ["${var.rabbit_secret_arn}"]
+    },
+    {
+      sid = "CloudwatchAccess",
+      effect = "Allow",
+      actions = ["cloudwatch:*"]
       resources = ["${var.rabbit_secret_arn}"]
     },
     {
@@ -113,17 +141,21 @@ module "ecs_task_role" {
 
 resource "aws_ecs_task_definition" "this" {
   family = var.name_base
-  cpu = 256
-  memory = 512
+  cpu = 1024
+  memory = 4096
   requires_compatibilities = ["FARGATE"]
   network_mode = "awsvpc"
-  execution_role_arn = module.ecs_task_execution_role.iam_role_arn
+  execution_role_arn = module.ecs_execution_role.iam_role_arn
   task_role_arn = module.ecs_task_role.iam_role_arn
   container_definitions = jsonencode([
     {
       name = var.name_base
-      image = "${module.ecr.repository_url}:latest"
+      image = "${module.ecr.repository_url}:dev"
       essential = true
+      environment = [{
+          name = "RABBIT_SECRET_ARN"
+          value = var.rabbit_secret_arn
+      }]
     }
   ])
 }
@@ -139,8 +171,9 @@ resource "aws_ecs_service" "this" {
     security_groups  = [aws_security_group.this.id]
     assign_public_ip = false
   }
-  depends_on = [aws_ecs_task_definition.this]
 }
+
+
 
 
 

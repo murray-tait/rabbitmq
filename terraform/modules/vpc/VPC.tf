@@ -10,23 +10,13 @@ variable "vpc_cidr" {
 }
 
 variable "public_subnets" {
-  default = {
-    "a" = "10.2.1.0/24",
-    "b" = "10.2.2.0/24",
-    "c" = "10.2.3.0/24"
-  }
   type        = map(string)
   description = "CIDR blocks for the Public Subnets"
 }
 
 variable "private_subnets" {
-  default = {
-    "a" = "10.2.4.0/24",
-    "b" = "10.2.5.0/24",
-    "c" = "10.2.6.0/24"
-  }
   type        = map(string)
-  description = "CIDR blocks for the Public Subnets"
+  description = "CIDR blocks for the Private Subnets"
 }
 
 variable "nat" {
