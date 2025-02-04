@@ -49,6 +49,14 @@ module "rabbit_downstream" {
   upstream_exchange_name = module.rabbit_upstream.exchange_name
 }
 
+module "docker_rabbit_consumer" {
+  source = "./modules/docker_rabbit_consumer/tf"
+  name_base = "RabbitConsumer"
+  vpc_id = module.vpc.vpc_id
+  subnet_ids = [module.vpc.public_subnets[0]]
+  rabbit_secret_arn = "arn:aws:secretsmanager:eu-west-1:127214154594:secret:RabbitConsume/UpstreamSecret"
+}
+
 # module "rabbit_lambda" {
 #   source = "./modules/rabbit_lambda"
 #   name_base = "maris-proxy"
