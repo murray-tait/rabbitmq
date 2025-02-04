@@ -80,20 +80,35 @@ resource "aws_security_group" "this" {
   }
 }
 
-data "aws_iam_policy_document" "ecs_task_execution_assume_role" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ecs-tasks.amazonaws.com"]
-    }
-  }
+module "ecs_task_execution_role" {
+  role_name_prefix = "${var.name_base}-ecs-task-execution-role"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
+  version = "5.52.2"
+  trusted_role_services = ["ecs-tasks.amazonaws.com"]
+  create_role = true
+  custom_role_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
 }
 
-resource "aws_iam_role" "ecs_tasks_execution_role" {
-  name_prefix = "${var.name_base}-ecs-task-execution-role"
-  assume_role_policy = "${data.aws_iam_policy_document.ecs_task_execution_assume_role.json}"
-  managed_policy_arns = ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
+module "ecs_task_role" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
+  trusted_role_services = ["ecs-tasks.amazonaws.com"]
+  version = "5.52.2"
+  role_name_prefix = "${var.name_base}-ecs-task-role"
+  create_role = true
+  inline_policy_statements = [
+    {
+      sid = "SecretsManagerAccess",
+      effect = "Allow",
+      actions = ["secretsmanager:Describe*", "secretsmanager:List*", "secretsmanager:Get*"]
+      resources = ["${var.rabbit_secret_arn}"]
+    },
+    {
+      sid = "SqsAccess",
+      effect = "Allow",
+      actions = ["sqs:SendMessage","sqs:Get*", "sqs:List*"]
+      resources = ["${module.sqs.queue_arn}"]
+    }
+  ]
 }
 
 resource "aws_ecs_task_definition" "this" {
@@ -102,7 +117,8 @@ resource "aws_ecs_task_definition" "this" {
   memory = 512
   requires_compatibilities = ["FARGATE"]
   network_mode = "awsvpc"
-  execution_role_arn = aws_iam_role.ecs_tasks_execution_role.arn
+  execution_role_arn = module.ecs_task_execution_role.iam_role_arn
+  task_role_arn = module.ecs_task_role.iam_role_arn
   container_definitions = jsonencode([
     {
       name = var.name_base
@@ -119,7 +135,6 @@ resource "aws_ecs_service" "this" {
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
-
     subnets          = var.subnet_ids
     security_groups  = [aws_security_group.this.id]
     assign_public_ip = false
@@ -129,64 +144,5 @@ resource "aws_ecs_service" "this" {
 
 
 
-# module "ecs" {
-#   source = "terraform-aws-modules/ecs/aws"
-#   version = "5.12.0"
-#   cluster_name = var.name_base
-#   cluster_configuration = {
-#     execute_command_configuration = {
-#       logging = "OVERRIDE"
-#       log_configuration = {
-#         cloud_watch_log_group_name = "/aws/ecs/${var.name_base}"
-#       }
-#     }
-#   }
-#   fargate_capacity_providers = {
-#     FARGATE = {
-#       default_capacity_provider_strategy = {
-#         weight = 100
-#       }
-#     }
-#   }
-#   services = {
-#     rabbit_consumer = {
-#       cpu    = 256
-#       memory = 1024
-#       log_configuration = {
-#         cloud_watch_log_group_name = "/aws/ecs/${var.name_base}"
-#       }
-#       container_definitions = {
-#         rabbit_consumer = {
-
-#           cpu       = 512
-#           memory    = 1024
-#           essential = true
-#           image     = "${module.ecr.repository_url}:latest"
-#           readonly_root_filesystem = true
-#           enable_cloudwatch_logging = true
-#           memory_reservation = 100
-#           environment = {
-#             RABBIT_SECRET_ARN = var.rabbit_secret_arn
-#             SQS_QUEUE_URL = module.sqs.queue_url
-#           }
-#         }
-#       }
-#       subnet_ids = var.subnet_ids
-#       security_group_rules = {
-#         egress_all = {
-#           type        = "egress"
-#           from_port   = 0
-#           to_port     = 0
-#           protocol    = "-1"
-#           cidr_blocks = ["0.0.0.0/0"]
-#         }
-#       }
-#     }
-#   }
-#   tags = {
-#     Environment = "Development"
-#     Project     = "Example"
-#   }
-# }
 
 
