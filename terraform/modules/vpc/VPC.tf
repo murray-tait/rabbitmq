@@ -29,13 +29,21 @@ variable "private_subnets" {
   description = "CIDR blocks for the Public Subnets"
 }
 
+variable "nat" {
+  default     = false
+  type        = bool
+  description = "True to create nat gateways. False for no nat gateways."
+  validation {
+    condition     = var.nat == true || var.nat == false
+    error_message = "Must be either true or false."
+  }
+}
 
 data "aws_region" "current" {}
 
 data "aws_availability_zones" "available" {
   state = "available"
 }
-
 
 resource "aws_vpc" "tf_vpc" {
   cidr_block           = var.vpc_cidr
@@ -47,6 +55,16 @@ resource "aws_vpc" "tf_vpc" {
   }
 }
 
+resource "aws_eip" "this" {
+  count = var.nat ? 1 : 0
+}
+
+resource "aws_route" "route_nat" {
+  count = var.nat ? 1 : 0
+  destination_cidr_block = "0.0.0.0/0"
+  route_table_id         = aws_route_table.private_route_table.id
+  nat_gateway_id         = aws_nat_gateway.nat_gw[0].id
+}
 
 resource "aws_subnet" "public_subnet" {
   availability_zone = join("", [data.aws_region.current.name, each.key])
@@ -57,6 +75,12 @@ resource "aws_subnet" "public_subnet" {
   tags = {
     Name = "${terraform.workspace}-public_subnet-${each.key}"
   }
+}
+
+resource "aws_nat_gateway" "nat_gw" {
+  count = var.nat ? 1 : 0
+  allocation_id = aws_eip.this[0].allocation_id
+  subnet_id = aws_subnet.public_subnet["a"].id
 }
 
 resource "aws_subnet" "private_subnet" {
@@ -71,9 +95,8 @@ resource "aws_subnet" "private_subnet" {
 
 resource "aws_route_table" "private_route_table" {
   vpc_id   = aws_vpc.tf_vpc.id
-  for_each = var.private_subnets
   tags = {
-    Name = "${terraform.workspace}-private_route_table-${each.key}"
+    Name = "${terraform.workspace}-private_route_table"
   }
 }
 
@@ -92,7 +115,7 @@ resource "aws_route_table_association" "rtas_public" {
 
 resource "aws_route_table_association" "rtas_private" {
   for_each       = aws_subnet.private_subnet
-  route_table_id = aws_route_table.private_route_table[each.key].id
+  route_table_id = aws_route_table.private_route_table.id
   subnet_id      = each.value.id
 }
 
