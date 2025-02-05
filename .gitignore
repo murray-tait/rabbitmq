@@ -2,3 +2,5 @@ terraform/.terraform/terraform.tfstate
 terraform/.terraform
 terraform/builds
 terraform/.terraform.lock.hcl
+terraform/modules/docker_rabbit_consumer/app/build/App.js
+terraform/modules/docker_rabbit_consumer/app/build/App.js.map
