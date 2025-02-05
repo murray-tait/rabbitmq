@@ -44,15 +44,7 @@ interface RabbitConsumerProps {
 // const secretString = await getSecretValue(process.env.RABBIT_SECRET_ARN);
 // const secret: RabbitConsumerProps = JSON.parse(secretString);
 
-const rabbitConnection = new RabbitConnection({
-    hostname: "b-d1cb2315-4f93-4591-a6f0-06f3078f42cf.mq.eu-west-1.amazonaws.com",
-    vhost: "test_vhost",
-    port: 5672,
-    username: "RabbitAdmin",
-    password: "MyPassword",
-    connectionTimeout: 30000,
-    acquireTimeout: 30000
-});
+const rabbitConnection = new RabbitConnection("amqps://RabbitAdmin:MyPassword@b-d1cb2315-4f93-4591-a6f0-06f3078f42cf.mq.eu-west-1.amazonaws.com:5672");
 
 rabbitConnection.on("error", (err) => {
     console.log("RabbitMQ connection error", err);
