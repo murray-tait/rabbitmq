@@ -4,6 +4,7 @@
   "description": "Test Rabbit Consumer",
   "author": "",
   "license": "",
+  "type": "module",
   "devDependencies": {
     "@types/express": "^5.0.0",
     "nodemon": "^3.1.9",
@@ -19,8 +20,6 @@
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.738.0",
     "aws-sdk": "^2.1692.0",
-    "express": "^4.21.2",
-    "rabbitmq-client": "^5.0.2",
-    "raise": "^0.0.0"
+    "rabbitmq-client": "^5.0.2"
   }
 }

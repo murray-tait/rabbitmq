@@ -18,38 +18,40 @@ interface RabbitConsumerProps {
     password: string;
 }
 
-const getSecretValue = async (secretId: string) => {
-    const client = new SecretsManagerClient();
-    const response = await client.send(
-        new GetSecretValueCommand({
-            SecretId: secretId,
-        })
-    );
-    console.log(response);
-    if (response.SecretString) {
-        return response.SecretString;
-    }
-    if (response.SecretBinary) {
-        throw new Error("SecretBinary is not supported");
-    }
-    throw new Error("Malformed response");
-};
+// const getSecretValue = async (secretId: string) => {
+//     const client = new SecretsManagerClient();
+//     const response = await client.send(
+//         new GetSecretValueCommand({
+//             SecretId: secretId,
+//         })
+//     );
+//     console.log(response);
+//     if (response.SecretString) {
+//         return response.SecretString;
+//     }
+//     if (response.SecretBinary) {
+//         throw new Error("SecretBinary is not supported");
+//     }
+//     throw new Error("Malformed response");
+// };
 
-if (!process.env.RABBIT_SECRET_ARN) {
-    throw new Error(
-        "Environment Variable Missing: RABBIT_SECRET_ARN is required"
-    );
-}
+// if (!process.env.RABBIT_SECRET_ARN) {
+//     throw new Error(
+//         "Environment Variable Missing: RABBIT_SECRET_ARN is required"
+//     );
+// }
 
-const secretString = await getSecretValue(process.env.RABBIT_SECRET_ARN);
-const secret: RabbitConsumerProps = JSON.parse(secretString);
+// const secretString = await getSecretValue(process.env.RABBIT_SECRET_ARN);
+// const secret: RabbitConsumerProps = JSON.parse(secretString);
 
 const rabbitConnection = new RabbitConnection({
-    hostname: secret.host,
-    vhost: secret.vhost,
-    port: secret.port,
-    username: secret.username,
-    password: secret.password,
+    hostname: "b-d1cb2315-4f93-4591-a6f0-06f3078f42cf.mq.eu-west-1.amazonaws.com",
+    vhost: "test_vhost",
+    port: 5672,
+    username: "RabbitAdmin",
+    password: "MyPassword",
+    connectionTimeout: 30000,
+    acquireTimeout: 30000
 });
 
 rabbitConnection.on("error", (err) => {
@@ -61,14 +63,23 @@ rabbitConnection.on("connection", () => {
 });
 
 const rabbitSubscription = rabbitConnection.createConsumer(
-    {
-        queue: secret.queue,
-    },
-    async (msg) => {
-        console.log("received message (user-events)", msg);
-    }
+  {
+    queue: "test_queue",
+  },
+  async (msg) => {
+    console.log("received message (user-events)", msg);
+  }
 );
 
 rabbitSubscription.on("error", (err) => {
     console.log("consumer error (user-events)", err);
 });
+
+async function onShutdown() {
+  // Stop consuming. Wait for any pending message handlers to settle.
+  await rabbitSubscription.close();
+  await rabbitConnection.close();
+}
+
+process.on("SIGINT", onShutdown);
+process.on("SIGTERM", onShutdown);
